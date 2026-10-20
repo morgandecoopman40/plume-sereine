@@ -704,18 +704,19 @@ footer .heart{color:var(--rose)}
           </div>
         </div>
       </div>
-      <form class="contact-form" onsubmit="event.preventDefault();alert('Merci ! Je vous recontacte sous 24h.');this.reset()">
+      <form class="contact-form" id="contact-form" onsubmit="envoyerContact(event)">
+        <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
         <div class="form-group">
-          <label>Votre nom</label>
-          <input type="text" placeholder="Prénom et nom" required>
+          <label for="contact-nom">Votre nom</label>
+          <input type="text" id="contact-nom" name="nom" placeholder="Prénom et nom" required>
         </div>
         <div class="form-group">
-          <label>Email ou téléphone</label>
-          <input type="text" placeholder="Pour vous recontacter" required>
+          <label for="contact-coord">Email ou téléphone</label>
+          <input type="text" id="contact-coord" name="coordonnees" placeholder="Pour vous recontacter" required>
         </div>
         <div class="form-group">
-          <label>Niveau de l'élève</label>
-          <select required>
+          <label for="contact-niveau">Niveau de l'élève</label>
+          <select id="contact-niveau" name="niveau" required>
             <option value="">Sélectionner</option>
             <option>Primaire</option>
             <option>Collège</option>
@@ -723,10 +724,12 @@ footer .heart{color:var(--rose)}
           </select>
         </div>
         <div class="form-group">
-          <label>Message</label>
-          <textarea placeholder="Décrivez brièvement les besoins et les objectifs..." required></textarea>
+          <label for="contact-message">Message</label>
+          <textarea id="contact-message" name="message" placeholder="Décrivez brièvement les besoins et les objectifs..." required></textarea>
         </div>
         <button type="submit" class="btn-submit">Envoyer ma demande</button>
+        <p id="contact-statut" role="status" style="display:none;margin-top:1rem;font-size:14px;line-height:1.5;color:var(--creme)"></p>
+        <p style="margin-top:1rem;font-size:11px;line-height:1.5;color:rgba(250,245,239,.6)">Vos coordonnées servent uniquement à vous recontacter au sujet de votre demande. Le message est transmis par e-mail à Plume & Méthode via le service Web3Forms.</p>
       </form>
     </div>
   </div>
@@ -912,6 +915,45 @@ document.querySelectorAll('.nav-links a, .nav-links button').forEach(el => {
     }
   });
 });
+
+// FORMULAIRE DE CONTACT — envoi par e-mail via Web3Forms (clé publique, faite pour être dans la page)
+const WEB3FORMS_KEY = 'CLE_WEB3FORMS_A_RENSEIGNER';
+
+async function envoyerContact(e) {
+  e.preventDefault();
+  const form = e.target;
+  const bouton = form.querySelector('.btn-submit');
+  const statut = document.getElementById('contact-statut');
+  const d = Object.fromEntries(new FormData(form));
+  const afficher = (texte, ok) => { statut.textContent = texte; statut.style.color = ok ? 'var(--creme)' : '#F5D5C0'; statut.style.display = 'block'; };
+  bouton.disabled = true; bouton.textContent = 'Envoi en cours…';
+  try {
+    const rep = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_KEY,
+        subject: `Nouvelle demande de cours (${d.niveau}) — ${d.nom}`,
+        from_name: 'Site Plume & Méthode',
+        botcheck: d.botcheck ? true : '',
+        'Nom': d.nom,
+        'Email ou téléphone': d.coordonnees,
+        'Niveau': d.niveau,
+        'Message': d.message,
+        ...(/^\S+@\S+\.\S+$/.test(d.coordonnees.trim()) ? { email: d.coordonnees.trim() } : {}),
+      }),
+    });
+    const res = await rep.json();
+    if (!rep.ok || !res.success) throw new Error(res.message || rep.status);
+    form.reset();
+    afficher('Merci ! Votre demande a bien été envoyée. Je vous recontacte sous 24 h.', true);
+  } catch (err) {
+    console.error('Erreur envoi contact:', err);
+    afficher("Désolée, l'envoi n'a pas fonctionné. Vous pouvez m'appeler au 06 71 08 61 61 ou écrire à plumemethode@gmail.com.", false);
+  } finally {
+    bouton.disabled = false; bouton.textContent = 'Envoyer ma demande';
+  }
+}
 
 async function openCGVModal() {
   let ent={};
