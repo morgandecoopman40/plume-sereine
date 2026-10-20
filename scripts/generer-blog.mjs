@@ -40,6 +40,7 @@ const PAGES_LOCALES = [
   'preparation-bac-francais', 'preparation-brevet-francais',
 ];
 const TELEPHONE = { affiche: '06 71 08 61 61', lien: 'tel:+33671086161' };
+const AUTEURE = 'Justine Rose-Bojczuk';
 
 const accueil = readFileSync(join(RACINE, 'index.html'), 'utf8');
 
@@ -201,21 +202,40 @@ function pageListeBlog(articles, commun) {
 }
 
 function pageArticle(a, commun) {
+  const url = `${SITE}/blog/${a.slug}/`;
+  const description = a.description || extrait(a.contenu);
   return page({
     chemin: `/blog/${a.slug}/`,
     titre: `${a.titre} | Plume & Méthode`,
-    description: a.description || extrait(a.contenu),
+    description,
     type: 'article',
     image: a.image_url,
     corps: `<div class="container" style="max-width:700px">
       <a href="/blog/" style="${LIEN_RETOUR}">← Retour au blog</a>
       <article>
         <h1 style="${STYLE_H1};margin-bottom:.5rem">${echapper(a.titre)}</h1>
-        <div style="color:#7BA098;font-size:14px;margin-bottom:2rem">📅 <time datetime="${echapper(a.date_publication)}">${dateFr(a.date_publication)}</time></div>
-        ${a.image_url ? `<img src="${echapper(a.image_url)}" alt="${echapper(a.titre)}" style="width:100%;border-radius:16px;margin-bottom:2rem;max-height:400px;object-fit:cover">` : ''}
+        <div style="color:#7BA098;font-size:14px;margin-bottom:2rem">📅 <time datetime="${echapper(a.date_publication)}">${dateFr(a.date_publication)}</time> · Par Justine, Plume & Méthode</div>
+        ${a.image_url ? `<img src="${echapper(a.image_url)}" alt="Illustration de l'article : ${echapper(a.titre)}" style="width:100%;border-radius:16px;margin-bottom:2rem;max-height:400px;object-fit:cover">` : ''}
         <div style="${STYLE_TEXTE}">${corrigerLiens(a.contenu)}</div>
       </article>
+      <div class="page-cta" style="text-align:left">
+        <p><strong>Besoin d'un accompagnement personnalisé ?</strong> Plume & Méthode propose des cours particuliers de français à domicile à <a href="/cours-francais-bruay-la-buissiere/" style="color:#5E8A80">Bruay-la-Buissière</a>, à <a href="/cours-francais-bethune/" style="color:#5E8A80">Béthune</a> et alentours, du CP à la Terminale.</p>
+        <a href="/#contact" class="btn-primary">Réserver un premier cours</a>
+      </div>
     </div>`,
+    jsonld: [{
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: a.titre,
+      description,
+      image: a.image_url || IMAGE_PARTAGE,
+      datePublished: a.date_publication,
+      dateModified: a.updated_at || a.date_publication,
+      author: { '@type': 'Person', name: AUTEURE, url: `${SITE}/` },
+      publisher: { '@type': 'EducationalOrganization', '@id': `${SITE}/#organisation`, name: 'Plume & Méthode', url: `${SITE}/` },
+      mainEntityOfPage: url,
+      inLanguage: 'fr-FR',
+    }],
   }, commun);
 }
 
