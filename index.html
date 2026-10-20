@@ -3,6 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// Anciennes adresses « #/… » → vraies pages générées par scripts/generer-blog.mjs
+(function(){
+  function rediriger(){
+    var h=location.hash,c=null;
+    if(h==='#/blog'||h==='#/blog/')c='/blog/';
+    else if(h.indexOf('#/blog/')===0)c='/blog/'+h.slice(7).replace(/\/$/,'')+'/';
+    else if(h.indexOf('#/page/')===0)c='/'+h.slice(7).replace(/\/$/,'')+'/';
+    if(c)location.replace(c);
+  }
+  rediriger();
+  window.addEventListener('hashchange',rediriger);
+})();
+</script>
 <meta name="description" content="Cours particuliers de français à Bruay-la-Buissière, Béthune et alentours : méthode, orthographe, préparation au brevet et au bac. Séances adaptées à chaque élève.">
 <meta name="keywords" content="cours particuliers français, soutien scolaire, Bruay-la-Buissière, Béthune, cours de français, primaire, collège, lycée, bac français, cours à domicile, présentiel, Plume & Méthode">
 <meta name="author" content="Plume & Méthode — Justine Rose-Bojczuk">
@@ -465,7 +479,7 @@ footer .heart{color:var(--rose)}
       <a href="#services">Cours & tarifs</a>
       <a href="#methode">Méthode</a>
       <a href="#faq">FAQ</a>
-      <a href="#/blog" onclick="event.preventDefault();window.location.hash='#/blog';handleRoute()">Blog</a>
+      <a href="/blog/">Blog</a>
       <a href="#contact" class="btn-cta">Réserver</a>
       <button onclick="openLoginModal()" class="btn-login-nav">🔒 Espace privé</button>
     </div>
@@ -718,7 +732,7 @@ footer .heart{color:var(--rose)}
     <div id="footer-social" style="display:flex;justify-content:center;gap:1.25rem;margin-bottom:1rem;flex-wrap:wrap"></div>
     <p>© 2026 Plume & Méthode — Cours particuliers de français • <span class="heart">♥</span> La méthode qui fait la différence</p>
     <p style="font-size:12px;margin-top:.5rem">
-      <a href="#/blog" onclick="event.preventDefault();window.location.hash='#/blog';handleRoute()" style="color:#7BA098;text-decoration:underline;margin-right:1rem">Blog</a>
+      <a href="/blog/" style="color:#7BA098;text-decoration:underline;margin-right:1rem">Blog</a>
       <a href="#" onclick="event.preventDefault();openCGVModal()" style="color:#7BA098;text-decoration:underline">Conditions Générales de Vente</a>
     </p>
   </div>
@@ -3637,7 +3651,7 @@ async function loadAdminBlog(){
     if(!articles||!articles.length){list.innerHTML=`<div class="empty-state"><div class="empty-state-icon">✍️</div><h3>Aucun article</h3><p>Écris ton premier article de blog.</p></div>`;return;}
     list.innerHTML=articles.map(a=>`<div class="admin-card"><div class="admin-card-row"><div class="admin-card-info">
       <div class="admin-card-title">${a.titre} <span style="font-size:11px;background:${a.publie?'#E8F5E9':'#FFF3E0'};color:${a.publie?'#2E7D32':'#E65100'};padding:2px 8px;border-radius:99px;font-weight:600">${a.publie?'✅ Publié':'📝 Brouillon'}</span></div>
-      <div class="admin-card-meta"><span>🔗 #/blog/${a.slug}</span>${a.mots_cles?`<span>🏷️ ${a.mots_cles}</span>`:''}<span>📅 ${new Date(a.created_at).toLocaleDateString('fr-FR')}</span></div>
+      <div class="admin-card-meta"><span>🔗 /blog/${a.slug}/</span>${a.mots_cles?`<span>🏷️ ${a.mots_cles}</span>`:''}<span>📅 ${new Date(a.created_at).toLocaleDateString('fr-FR')}</span></div>
       ${a.description?`<div style="margin-top:.5rem;font-size:13px;color:#5C5C6E">${a.description}</div>`:''}
     </div><div class="admin-card-actions">
       <button class="btn-action" onclick="editArticle('${a.id}')"">✏️</button>
@@ -3704,7 +3718,7 @@ async function loadAdminPages(){
     if(!pages||!pages.length){list.innerHTML=`<div class="empty-state"><div class="empty-state-icon">📄</div><h3>Aucune page</h3><p>Crée une page personnalisée.</p></div>`;return;}
     list.innerHTML=pages.map(p=>`<div class="admin-card"><div class="admin-card-row"><div class="admin-card-info">
       <div class="admin-card-title">${p.titre} <span style="font-size:11px;background:${p.publie?'#E8F5E9':'#FFF3E0'};color:${p.publie?'#2E7D32':'#E65100'};padding:2px 8px;border-radius:99px;font-weight:600">${p.publie?'✅ Publiée':'📝 Brouillon'}</span> ${p.show_in_nav?'<span style="font-size:11px;background:#E3F2FD;color:#1565C0;padding:2px 8px;border-radius:99px;font-weight:600">📌 Navigation</span>':''}</div>
-      <div class="admin-card-meta"><span>🔗 #/page/${p.slug}</span></div>
+      <div class="admin-card-meta"><span>🔗 /${p.slug}/</span></div>
     </div><div class="admin-card-actions">
       <button class="btn-action" onclick="editPage('${p.id}')">✏️</button>
       <button class="btn-action danger" onclick="deletePage('${p.id}')">🗑️</button>
@@ -3818,9 +3832,8 @@ async function loadNavPages(){
     const reserverBtn=navLinks.querySelector('.btn-cta');
     pages.forEach(p=>{
       const link=document.createElement('a');
-      link.href='#/page/'+p.slug;
+      link.href='/'+p.slug+'/';
       link.textContent=p.titre;
-      link.onclick=function(e){e.preventDefault();window.location.hash='#/page/'+p.slug;handleRoute();};
       if(reserverBtn) navLinks.insertBefore(link,reserverBtn);
       else navLinks.appendChild(link);
     });
@@ -3828,101 +3841,11 @@ async function loadNavPages(){
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ROUTER — Blog + Pages (hash-based)
+// LIENS DEPUIS LES AUTRES PAGES — /#espace-prive et /#cgv
+// (le blog et les pages perso sont de vraies pages : scripts/generer-blog.mjs)
 // ═══════════════════════════════════════════════════════════════
-
-// Create blog/page container - insert before footer
-const blogPageContainer=document.createElement('div');
-blogPageContainer.id='blog-page-container';
-blogPageContainer.style.cssText='display:none;min-height:80vh;padding:2rem 0';
-const footerEl=document.querySelector('footer');
-if(footerEl&&footerEl.parentElement){
-  footerEl.parentElement.insertBefore(blogPageContainer,footerEl);
-  console.log('✅ Blog container inséré');
-} else {
-  document.body.appendChild(blogPageContainer);
-  console.log('⚠️ Blog container ajouté au body (footer non trouvé)');
-}
-
-// Sections à cacher/montrer lors du routing
-const publicSections=document.querySelectorAll('section, .hero');
-
-async function handleRoute(){
-  const hash=window.location.hash;
-  
-  if(hash.startsWith('#/blog/') || hash==='#/blog' || hash.startsWith('#/page/')){
-    // Cacher les sections publiques
-    publicSections.forEach(s=>{ if(!s.closest('#dashboard') && !s.closest('#blog-page-container')) s.style.display='none'; });
-    blogPageContainer.style.display='block';
-    
-    if(hash==='#/blog'){
-      await renderBlogList();
-    } else if(hash.startsWith('#/blog/')){
-      const slug=hash.replace('#/blog/','');
-      await renderBlogArticle(slug);
-    } else if(hash.startsWith('#/page/')){
-      const slug=hash.replace('#/page/','');
-      await renderCustomPage(slug);
-    }
-    window.scrollTo({top:0});
-  } else if(!hash.startsWith('#/')) {
-    // Page d'accueil - montrer les sections publiques
-    blogPageContainer.style.display='none';
-    publicSections.forEach(s=>{ if(!s.closest('#dashboard') && !s.closest('#blog-page-container')) s.style.display=''; });
-  }
-}
-
-async function renderBlogList(){
-  try{const{data:articles}=await window.sb.from('blog_articles').select('*').eq('publie',true).order('date_publication',{ascending:false});
-    blogPageContainer.innerHTML=`<div class="container" style="max-width:800px;margin:0 auto;padding:2rem">
-      <a href="#" onclick="event.preventDefault();window.location.hash='';handleRoute()" style="color:#7BA098;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:1rem">← Retour à l'accueil</a>
-      <h1 style="font-family:var(--serif);font-size:36px;color:var(--encre);margin-bottom:2rem">✍️ Blog Plume & Méthode</h1>
-      ${!articles||!articles.length?'<p style="color:#7BA098">Aucun article publié pour le moment.</p>':
-        articles.map(a=>`<a href="#/blog/${a.slug}" onclick="event.preventDefault();window.location.hash='#/blog/${a.slug}';handleRoute()" style="text-decoration:none;display:block;margin-bottom:1.5rem">
-          <div class="admin-card" style="transition:transform .2s;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
-            ${a.image_url?`<div style="width:100%;height:200px;background:url('${a.image_url}') center/cover no-repeat;border-radius:12px 12px 0 0;margin:-1.25rem -1.25rem 1rem -1.25rem;width:calc(100% + 2.5rem)"></div>`:''}
-            <div class="admin-card-title" style="font-size:20px">${a.titre}</div>
-            ${a.description?`<p style="color:#5C5C6E;font-size:14px;margin-top:.5rem">${a.description}</p>`:''}
-            <div class="admin-card-meta" style="margin-top:.5rem"><span>📅 ${new Date(a.date_publication).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</span>${a.mots_cles?`<span>🏷️ ${a.mots_cles}</span>`:''}</div>
-          </div></a>`).join('')}
-    </div>`;
-  }catch(e){blogPageContainer.innerHTML='<p style="color:red;text-align:center;padding:2rem">Erreur de chargement</p>';}
-}
-
-async function renderBlogArticle(slug){
-  try{const{data:a}=await window.sb.from('blog_articles').select('*').eq('slug',slug).eq('publie',true).single();
-    if(!a){blogPageContainer.innerHTML=`<div class="container" style="text-align:center;padding:3rem"><h2>Article introuvable</h2><a href="#/blog" onclick="event.preventDefault();window.location.hash='#/blog';handleRoute()">← Retour au blog</a></div>`;return;}
-    document.title=`${a.titre} — Plume & Méthode`;
-    const metaDesc=document.querySelector('meta[name="description"]');if(metaDesc&&a.description)metaDesc.setAttribute('content',a.description);
-    
-    blogPageContainer.innerHTML=`<div class="container" style="max-width:700px;margin:0 auto;padding:2rem">
-      <a href="#/blog" onclick="event.preventDefault();window.location.hash='#/blog';handleRoute()" style="color:#7BA098;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:1.5rem">← Retour au blog</a>
-      <article>
-        <h1 style="font-family:var(--serif);font-size:36px;color:var(--encre);margin-bottom:.5rem;line-height:1.2">${a.titre}</h1>
-        <div style="color:#7BA098;font-size:14px;margin-bottom:2rem">📅 ${new Date(a.date_publication).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})} ${a.mots_cles?`• 🏷️ ${a.mots_cles}`:''}</div>
-        ${a.image_url?`<img src="${a.image_url}" alt="${a.titre}" style="width:100%;border-radius:16px;margin-bottom:2rem;max-height:400px;object-fit:cover">`:'' }
-        <div style="font-size:16px;color:#3D3D4E;line-height:1.8">${a.contenu}</div>
-      </article>
-    </div>`;
-  }catch(e){blogPageContainer.innerHTML='<p style="color:red;text-align:center;padding:2rem">Erreur de chargement</p>';}
-}
-
-async function renderCustomPage(slug){
-  try{const{data:p}=await window.sb.from('pages_custom').select('*').eq('slug',slug).eq('publie',true).single();
-    if(!p){blogPageContainer.innerHTML=`<div class="container" style="text-align:center;padding:3rem"><h2>Page introuvable</h2><a href="#" onclick="event.preventDefault();window.location.hash='';handleRoute()">← Retour à l'accueil</a></div>`;return;}
-    document.title=`${p.titre} — Plume & Méthode`;
-    if(p.description){const metaDesc=document.querySelector('meta[name="description"]');if(metaDesc)metaDesc.setAttribute('content',p.description);}
-    blogPageContainer.innerHTML=`<div class="container" style="max-width:700px;margin:0 auto;padding:2rem">
-      <a href="#" onclick="event.preventDefault();window.location.hash='';handleRoute()" style="color:#7BA098;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:1.5rem">← Retour à l'accueil</a>
-      <h1 style="font-family:var(--serif);font-size:36px;color:var(--encre);margin-bottom:2rem">${p.titre}</h1>
-      <div style="font-size:16px;color:#3D3D4E;line-height:1.8">${p.contenu}</div>
-    </div>`;
-  }catch(e){blogPageContainer.innerHTML='<p style="color:red;text-align:center;padding:2rem">Erreur de chargement</p>';}
-}
-
-window.addEventListener('hashchange',handleRoute);
-// Check route on load
-if(window.location.hash.startsWith('#/'))handleRoute();
+if(window.location.hash==='#espace-prive')openLoginModal();
+if(window.location.hash==='#cgv')openCGVModal();
 
 // ═══════════════════════════════════════════════════════════════
 // CONTRAT PDF (impression HTML)
