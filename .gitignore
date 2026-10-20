@@ -1,0 +1,3 @@
+# Site généré localement par scripts/generer-blog.mjs (publié par la GitHub Action)
+_site/
+node_modules/

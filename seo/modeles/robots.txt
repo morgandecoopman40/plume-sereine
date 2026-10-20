@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Décommenter et adapter si le site contient un espace privé
+# Disallow: /espace-eleves/
+
+Sitemap: https://plume-methode.fr/sitemap.xml

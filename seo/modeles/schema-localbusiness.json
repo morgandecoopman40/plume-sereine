@@ -1,0 +1,44 @@
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  "@id": "https://plume-methode.fr/#organisation",
+  "name": "Plume & Méthode",
+  "description": "Cours particuliers de français à domicile à Bruay-la-Buissière, Béthune et alentours, du primaire au lycée : méthode, orthographe, préparation au brevet et au bac de français.",
+  "url": "https://plume-methode.fr/",
+  "telephone": "+33671086161",
+  "slogan": "La méthode qui fait la différence",
+  "areaServed": [
+    {"@type": "City", "name": "Bruay-la-Buissière"},
+    {"@type": "City", "name": "Béthune"},
+    {"@type": "City", "name": "Divion"},
+    {"@type": "City", "name": "Houdain"},
+    {"@type": "City", "name": "Haillicourt"},
+    {"@type": "City", "name": "Auchel"}
+  ],
+  "serviceType": [
+    "Cours particuliers de français",
+    "Soutien scolaire",
+    "Préparation au brevet de français",
+    "Préparation au bac de français"
+  ],
+  "priceRange": "25€-40€/h",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Cours de français",
+    "itemListElement": [
+      {"@type": "Offer", "name": "Cours Primaire", "price": "25", "priceCurrency": "EUR"},
+      {"@type": "Offer", "name": "Cours Collège", "price": "35", "priceCurrency": "EUR"},
+      {"@type": "Offer", "name": "Cours Lycée", "price": "40", "priceCurrency": "EUR"},
+      {"@type": "Offer", "name": "Prépa Bac", "price": "40", "priceCurrency": "EUR"}
+    ]
+  },
+  "founder": {
+    "@type": "Person",
+    "name": "Justine Rose-Bojczuk",
+    "jobTitle": "Professeure de français"
+  },
+  "sameAs": [
+    "URL_PAGE_FACEBOOK_A_RENSEIGNER",
+    "URL_FICHE_GOOGLE_A_RENSEIGNER"
+  ]
+}
