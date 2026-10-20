@@ -239,17 +239,39 @@ function pageArticle(a, commun) {
   }, commun);
 }
 
-function pagePerso(p, commun) {
+// Pages créées dans l'admin : même mise en forme et même fin de page que les pages locales.
+function pagePerso(p, locales, article, commun) {
   return page({
     chemin: `/${p.slug}/`,
     titre: `${p.titre} | Plume & Méthode`,
     description: p.description || extrait(p.contenu),
-    corps: `<div class="container" style="max-width:700px">
+    corps: `<div class="container" style="max-width:760px">
       <a href="/" style="${LIEN_RETOUR}">← Retour à l'accueil</a>
-      <h1 style="${STYLE_H1};margin-bottom:2rem">${echapper(p.titre)}</h1>
-      <div style="${STYLE_TEXTE}">${corrigerLiens(p.contenu)}</div>
+      <h1 style="${STYLE_H1};margin-bottom:1.5rem">${echapper(p.titre)}</h1>
+      <div class="contenu">
+      ${corrigerLiens(p.contenu)}
+      ${finDePage(locales, article)}
+      </div>
     </div>`,
   }, commun);
+}
+
+// Encadré « Réserver un premier cours » + liens « À voir aussi » (pages locales sauf la page courante, dernier article).
+function finDePage(locales, article, slugCourant) {
+  const liens = [
+    ...locales.filter(o => o.slug !== slugCourant).map(o => `<li><a href="/${o.slug}/">${echapper(o.lien)}</a></li>`),
+    ...(article ? [`<li><a href="/blog/${article.slug}/">Article : ${echapper(article.titre)}</a></li>`] : []),
+  ].join('\n        ');
+  return `<div class="page-cta">
+        <p><strong>Prêt à faire le premier pas ?</strong> Le premier échange est gratuit.</p>
+        <a href="/#contact" class="btn-primary">Réserver un premier cours</a>
+        <p style="margin:1rem 0 0">ou appelez le <a href="${TELEPHONE.lien}">${TELEPHONE.affiche}</a></p>
+      </div>
+
+      <h2>À voir aussi</h2>
+      <ul class="page-liens">
+        ${liens}
+      </ul>`;
 }
 
 // Date de dernière modification d'un fichier du dépôt (via Git), sinon rien.
@@ -273,11 +295,6 @@ function lirePageLocale(slug) {
 }
 
 function pageLocale(p, toutes, article, commun) {
-  const autres = toutes.filter(o => o.slug !== p.slug);
-  const liens = [
-    ...autres.map(o => `<li><a href="/${o.slug}/">${echapper(o.lien)}</a></li>`),
-    ...(article ? [`<li><a href="/blog/${article.slug}/">Article : ${echapper(article.titre)}</a></li>`] : []),
-  ].join('\n        ');
   const faq = p.faq.map(f => `<h3>${echapper(f.q)}</h3>\n      <p>${echapper(f.r)}</p>`).join('\n      ');
   return page({
     chemin: `/${p.slug}/`,
@@ -292,16 +309,7 @@ function pageLocale(p, toutes, article, commun) {
       <h2>Questions fréquentes</h2>
       ${faq}
 
-      <div class="page-cta">
-        <p><strong>Prêt à faire le premier pas ?</strong> Le premier échange est gratuit.</p>
-        <a href="/#contact" class="btn-primary">Réserver un premier cours</a>
-        <p style="margin:1rem 0 0">ou appelez le <a href="${TELEPHONE.lien}">${TELEPHONE.affiche}</a></p>
-      </div>
-
-      <h2>À voir aussi</h2>
-      <ul class="page-liens">
-        ${liens}
-      </ul>
+      ${finDePage(toutes, article, p.slug)}
       </div>
     </div>`,
     jsonld: [{
@@ -371,8 +379,8 @@ for (const f of LISTE_BLANCHE) {
 ecrire('assets/style.css', bloc(/<style>[\s\S]*?<\/style>/, 'style').slice(7, -8).trim() + '\n');
 ecrire('blog/index.html', pageListeBlog(articles, commun));
 for (const a of articles) ecrire(`blog/${a.slug}/index.html`, pageArticle(a, commun));
-for (const p of pages) ecrire(`${p.slug}/index.html`, pagePerso(p, commun));
 const locales = PAGES_LOCALES.map(lirePageLocale);
+for (const p of pages) ecrire(`${p.slug}/index.html`, pagePerso(p, locales, articles[0], commun));
 for (const p of locales) ecrire(`${p.slug}/index.html`, pageLocale(p, locales, articles[0], commun));
 ecrire('404.html', page404(locales, commun));
 
