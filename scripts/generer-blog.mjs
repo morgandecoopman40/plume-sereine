@@ -118,7 +118,7 @@ if(n.style.display==='flex'){n.style.display='none';b.textContent='☰';}else{n.
 </script>`;
 
 // ─── Gabarit commun des pages générées ───
-function page({ chemin, titre, description, type = 'website', image, corps, jsonld = [] }, commun) {
+function page({ chemin, titre, description, type = 'website', image, corps, jsonld = [], indexer = true }, commun) {
   const url = SITE + chemin;
   const ld = jsonld.map(o => `<script type="application/ld+json">\n${JSON.stringify(o, null, 2)}\n</script>\n`).join('');
   return `<!DOCTYPE html>
@@ -128,9 +128,9 @@ function page({ chemin, titre, description, type = 'website', image, corps, json
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${echapper(titre)}</title>
 <meta name="description" content="${echapper(description)}">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="${indexer ? 'index, follow' : 'noindex'}">
 <meta name="theme-color" content="#3D3D4E">
-<link rel="canonical" href="${url}">
+${indexer ? `<link rel="canonical" href="${url}">` : ''}
 <meta property="og:title" content="${echapper(titre)}">
 <meta property="og:description" content="${echapper(description)}">
 <meta property="og:type" content="${type}">
@@ -312,6 +312,24 @@ function pageLocale(p, toutes, article, commun) {
   }, commun);
 }
 
+// Page affichée par GitHub Pages pour toute adresse inconnue (non indexée).
+function page404(locales, commun) {
+  return page({
+    chemin: '/404.html',
+    titre: 'Page introuvable | Plume & Méthode',
+    description: 'Cette page n\'existe pas ou a été déplacée.',
+    indexer: false,
+    corps: `<div class="container contenu" style="max-width:700px;text-align:center">
+      <h1 style="${STYLE_H1};margin-bottom:1rem">Page introuvable</h1>
+      <p>Cette page n'existe pas ou a été déplacée.</p>
+      <p style="margin:1.5rem 0"><a href="/" class="btn-primary">Retour à l'accueil</a></p>
+      <ul class="page-liens" style="justify-content:center">
+        ${[...locales.map(p => `<li><a href="/${p.slug}/">${echapper(p.lien)}</a></li>`), '<li><a href="/blog/">Blog</a></li>'].join('\n        ')}
+      </ul>
+    </div>`,
+  }, commun);
+}
+
 function ecrire(chemin, contenu) {
   const fichier = join(SORTIE, chemin);
   mkdirSync(dirname(fichier), { recursive: true });
@@ -356,6 +374,7 @@ for (const a of articles) ecrire(`blog/${a.slug}/index.html`, pageArticle(a, com
 for (const p of pages) ecrire(`${p.slug}/index.html`, pagePerso(p, commun));
 const locales = PAGES_LOCALES.map(lirePageLocale);
 for (const p of locales) ecrire(`${p.slug}/index.html`, pageLocale(p, locales, articles[0], commun));
+ecrire('404.html', page404(locales, commun));
 
 // Plan du site : uniquement des pages publiques (l'espace privé n'a pas d'URL propre).
 ecrire('sitemap.xml', sitemap([
