@@ -33,7 +33,7 @@ jobs:
 
       - name: Vérifier qu'aucun fichier de travail n'est publié
         run: |
-          for f in CLAUDE.md seo scripts .github _config.yml .gitignore; do
+          for f in CLAUDE.md seo scripts contenu .github _config.yml .gitignore; do
             if [ -e "_site/$f" ]; then
               echo "::error::_site/$f ne doit pas être publié"; exit 1
             fi

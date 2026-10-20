@@ -3,6 +3,7 @@
 //   - assets/style.css = le CSS de l'accueil (index.html reste la seule source du design) ;
 //   - /blog/ et /blog/<slug>/ à partir des articles publiés dans Supabase ;
 //   - /<slug>/ pour les pages personnalisées publiées (anciennement #/page/<slug>) ;
+//   - les pages locales écrites dans contenu/<slug>.html (texte + FAQ en en-tête JSON) ;
 //   - sitemap.xml listant toutes les pages publiques.
 //
 // Lecture seule, avec la clé publique « anon » déjà présente dans index.html.
@@ -32,6 +33,13 @@ const SLUGS_RESERVES = new Set([
   'preparation-bac-francais', 'preparation-brevet-francais',
 ]);
 const SLUG_VALIDE = /^[a-z0-9][a-z0-9-]*$/;
+
+// Pages locales et par besoin, dans l'ordre des liens croisés (sources : contenu/<slug>.html).
+const PAGES_LOCALES = [
+  'cours-francais-bruay-la-buissiere', 'cours-francais-bethune',
+  'preparation-bac-francais', 'preparation-brevet-francais',
+];
+const TELEPHONE = { affiche: '06 71 08 61 61', lien: 'tel:+33671086161' };
 
 const accueil = readFileSync(join(RACINE, 'index.html'), 'utf8');
 
@@ -134,7 +142,24 @@ function page({ chemin, titre, description, type = 'website', image, corps, json
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/style.css">
-<style>main.page{padding:7rem 0 3rem;min-height:70vh}</style>
+<style>
+main.page{padding:7rem 0 3rem;min-height:70vh}
+.contenu{font-size:16px;color:#3D3D4E;line-height:1.8}
+.contenu h2{font-family:var(--serif);font-size:28px;font-weight:500;line-height:1.25;margin:2.5rem 0 .75rem}
+.contenu h3{font-size:17px;font-weight:600;margin:1.5rem 0 .5rem}
+.contenu p,.contenu ul,.contenu ol,.contenu table{margin-bottom:1rem}
+.contenu ul,.contenu ol{padding-left:1.4rem}
+.contenu li{margin-bottom:.35rem}
+.contenu a:not(.btn-primary){color:#5E8A80}
+.contenu table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden}
+.contenu th,.contenu td{padding:.6rem .9rem;text-align:left;border-bottom:1px solid #EFE7DC}
+.contenu th{background:var(--sauge);font-weight:600;font-size:14px}
+.contenu td{white-space:nowrap}
+.page-cta{background:#fff;border-radius:18px;padding:1.5rem;margin:2.5rem 0;text-align:center}
+.page-cta p{margin-bottom:1rem}
+.page-liens{display:flex;flex-wrap:wrap;gap:.6rem;list-style:none;padding:0!important}
+.page-liens a{display:inline-block;padding:.45rem .9rem;border:1px solid var(--dore);border-radius:99px;text-decoration:none;font-size:14px}
+</style>
 ${ld}</head>
 <body>
 
@@ -219,6 +244,54 @@ function sitemap(entrees) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
 
+// ─── Pages locales (contenu/<slug>.html : en-tête JSON en commentaire, puis le texte) ───
+function lirePageLocale(slug) {
+  const source = readFileSync(join(RACINE, 'contenu', `${slug}.html`), 'utf8');
+  const m = source.match(/^<!--([\s\S]*?)-->\s*/);
+  if (!m) throw new Error(`contenu/${slug}.html : en-tête JSON manquant`);
+  return { slug, ...JSON.parse(m[1]), corps: source.slice(m[0].length).trim() };
+}
+
+function pageLocale(p, toutes, article, commun) {
+  const autres = toutes.filter(o => o.slug !== p.slug);
+  const liens = [
+    ...autres.map(o => `<li><a href="/${o.slug}/">${echapper(o.lien)}</a></li>`),
+    ...(article ? [`<li><a href="/blog/${article.slug}/">Article : ${echapper(article.titre)}</a></li>`] : []),
+  ].join('\n        ');
+  const faq = p.faq.map(f => `<h3>${echapper(f.q)}</h3>\n      <p>${echapper(f.r)}</p>`).join('\n      ');
+  return page({
+    chemin: `/${p.slug}/`,
+    titre: p.titre,
+    description: p.description,
+    corps: `<div class="container" style="max-width:760px">
+      <a href="/" style="${LIEN_RETOUR}">← Retour à l'accueil</a>
+      <h1 style="${STYLE_H1};margin-bottom:1.5rem">${echapper(p.h1)}</h1>
+      <div class="contenu">
+      ${p.corps}
+
+      <h2>Questions fréquentes</h2>
+      ${faq}
+
+      <div class="page-cta">
+        <p><strong>Prêt à faire le premier pas ?</strong> Le premier échange est gratuit.</p>
+        <a href="/#contact" class="btn-primary">Réserver un premier cours</a>
+        <p style="margin:1rem 0 0">ou appelez le <a href="${TELEPHONE.lien}">${TELEPHONE.affiche}</a></p>
+      </div>
+
+      <h2>À voir aussi</h2>
+      <ul class="page-liens">
+        ${liens}
+      </ul>
+      </div>
+    </div>`,
+    jsonld: [{
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: p.faq.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.r } })),
+    }],
+  }, commun);
+}
+
 function ecrire(chemin, contenu) {
   const fichier = join(SORTIE, chemin);
   mkdirSync(dirname(fichier), { recursive: true });
@@ -261,13 +334,16 @@ ecrire('assets/style.css', bloc(/<style>[\s\S]*?<\/style>/, 'style').slice(7, -8
 ecrire('blog/index.html', pageListeBlog(articles, commun));
 for (const a of articles) ecrire(`blog/${a.slug}/index.html`, pageArticle(a, commun));
 for (const p of pages) ecrire(`${p.slug}/index.html`, pagePerso(p, commun));
+const locales = PAGES_LOCALES.map(lirePageLocale);
+for (const p of locales) ecrire(`${p.slug}/index.html`, pageLocale(p, locales, articles[0], commun));
 
 // Plan du site : uniquement des pages publiques (l'espace privé n'a pas d'URL propre).
 ecrire('sitemap.xml', sitemap([
   { chemin: '/', lastmod: dateGit('index.html') },
+  ...locales.map(p => ({ chemin: `/${p.slug}/`, lastmod: dateGit(`contenu/${p.slug}.html`) })),
   { chemin: '/blog/', lastmod: articles[0]?.updated_at || articles[0]?.date_publication },
   ...articles.map(a => ({ chemin: `/blog/${a.slug}/`, lastmod: a.updated_at || a.date_publication })),
   ...pages.map(p => ({ chemin: `/${p.slug}/` })),
 ]));
 
-console.log(`✅ _site généré : ${articles.length} article(s), ${pages.length} page(s) perso.`);
+console.log(`✅ _site généré : ${locales.length} page(s) locale(s), ${articles.length} article(s), ${pages.length} page(s) perso.`);
