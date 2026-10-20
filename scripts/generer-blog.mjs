@@ -2,7 +2,8 @@
 //   - copie la liste blanche des fichiers du site (index.html, CNAME, assets/) ;
 //   - assets/style.css = le CSS de l'accueil (index.html reste la seule source du design) ;
 //   - /blog/ et /blog/<slug>/ à partir des articles publiés dans Supabase ;
-//   - /<slug>/ pour les pages personnalisées publiées (anciennement #/page/<slug>).
+//   - /<slug>/ pour les pages personnalisées publiées (anciennement #/page/<slug>) ;
+//   - sitemap.xml listant toutes les pages publiques.
 //
 // Lecture seule, avec la clé publique « anon » déjà présente dans index.html.
 // Tables lues : blog_articles (publie = true), pages_custom (publie = true),
@@ -13,6 +14,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -21,7 +23,7 @@ const SITE = 'https://plume-methode.fr';
 const IMAGE_PARTAGE = `${SITE}/assets/og-image.png`;
 
 // Seuls ces fichiers du dépôt sont publiés (CLAUDE.md, seo/, scripts/… ne le sont jamais).
-const LISTE_BLANCHE = ['index.html', 'CNAME', 'assets'];
+const LISTE_BLANCHE = ['index.html', 'CNAME', 'robots.txt', 'assets'];
 
 // Adresses déjà prises : une page perso ne peut pas les utiliser.
 const SLUGS_RESERVES = new Set([
@@ -205,6 +207,18 @@ function pagePerso(p, commun) {
   }, commun);
 }
 
+// Date de dernière modification d'un fichier du dépôt (via Git), sinon rien.
+function dateGit(fichier) {
+  try { return execSync(`git log -1 --format=%cI -- ${fichier}`, { cwd: RACINE }).toString().trim() || null; }
+  catch { return null; }
+}
+
+function sitemap(entrees) {
+  const urls = entrees.map(e => `  <url>\n    <loc>${SITE}${e.chemin}</loc>\n` +
+    (e.lastmod ? `    <lastmod>${new Date(e.lastmod).toISOString().slice(0, 10)}</lastmod>\n` : '') + '  </url>').join('\n');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+}
+
 function ecrire(chemin, contenu) {
   const fichier = join(SORTIE, chemin);
   mkdirSync(dirname(fichier), { recursive: true });
@@ -247,5 +261,13 @@ ecrire('assets/style.css', bloc(/<style>[\s\S]*?<\/style>/, 'style').slice(7, -8
 ecrire('blog/index.html', pageListeBlog(articles, commun));
 for (const a of articles) ecrire(`blog/${a.slug}/index.html`, pageArticle(a, commun));
 for (const p of pages) ecrire(`${p.slug}/index.html`, pagePerso(p, commun));
+
+// Plan du site : uniquement des pages publiques (l'espace privé n'a pas d'URL propre).
+ecrire('sitemap.xml', sitemap([
+  { chemin: '/', lastmod: dateGit('index.html') },
+  { chemin: '/blog/', lastmod: articles[0]?.updated_at || articles[0]?.date_publication },
+  ...articles.map(a => ({ chemin: `/blog/${a.slug}/`, lastmod: a.updated_at || a.date_publication })),
+  ...pages.map(p => ({ chemin: `/${p.slug}/` })),
+]));
 
 console.log(`✅ _site généré : ${articles.length} article(s), ${pages.length} page(s) perso.`);
