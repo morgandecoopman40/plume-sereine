@@ -1,0 +1,11 @@
+# Fichiers de travail à ne jamais publier sur plume-methode.fr.
+# Utilisé par la publication GitHub Pages « depuis une branche » (Jekyll).
+# La GitHub Action de déploiement applique en plus sa propre liste blanche.
+exclude:
+  - CLAUDE.md
+  - seo/
+  - scripts/
+  - README.md
+  - package.json
+  - package-lock.json
+  - node_modules/
